@@ -6,7 +6,7 @@ public class Flag extends Block {
    private String variable;
 
    public Flag(Block n, String v) {
-      next = n;
+      super(n);
       variable = v;
    }
 

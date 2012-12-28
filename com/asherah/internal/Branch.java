@@ -2,5 +2,10 @@
 package com.asherah.internal;
 
 public class Branch extends Block {
-   private Block child;
+   protected Block child;
+
+   public Branch(Block n, Block c) {
+      super(n);
+      child = c;
+   }
 }

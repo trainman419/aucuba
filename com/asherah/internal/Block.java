@@ -1,8 +1,10 @@
 
 package com.asherah.internal;
 
+import com.asherah.AsherahState;
+
 public class Block {
-   private Block next;
+   protected Block next;
 
    public Block(Block n) {
       next = n;

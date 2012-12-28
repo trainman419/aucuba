@@ -1,11 +1,13 @@
 
 package com.asherah.internal;
 
+import com.asherah.AsherahState;
+
 public class Text extends Block {
    private int resource_id;
 
    public Text(Block n, int res) {
-      next = n;
+      super(n);
       resource_id = res;
    }
 
@@ -14,3 +16,4 @@ public class Text extends Block {
       //  to the output layer
       return next;
    }
+}

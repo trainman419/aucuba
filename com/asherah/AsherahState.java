@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import com.asherah.internal.Block;
+
 public class AsherahState {
    private Stack<Block> stack;
    private List<Block> choice_stack;
@@ -17,7 +19,7 @@ public class AsherahState {
    }
 
    public void set(String name, AsherahValue v) {
-      heap.set(name, v);
+      heap.put(name, v);
    }
 
    // stack methods
@@ -58,7 +60,7 @@ public class AsherahState {
       return random_stack.size();
    }
 
-   public void random_get(int i) {
+   public Block random_get(int i) {
       Block b = random_stack.get(i);
       random_stack.clear();
       return b;

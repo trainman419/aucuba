@@ -28,7 +28,7 @@ public class AsherahValue {
       is_int = false;
    }
 
-   public bool asBoolean() {
+   public boolean asBoolean() {
       return bool_val;
    }
 
