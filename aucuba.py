@@ -18,9 +18,10 @@ class Block:
             i += 1
 
    def run(self, state):
-      print "ERROR: Block run() called"
+      print "ERROR: Block run() called on ", self
       return self.next
 
+stack = []
 random_stack = []
 choice_stack = []
 
@@ -30,10 +31,17 @@ def run_sequence(seq, state):
    b = seq
    while b:
       b = b.run(state)
+      if not b and len(stack) > 0:
+         b = stack.pop()
       if len(random_stack) > 0 and not isinstance(b, Random) and not isinstance(b, Conditional):
+         if b:
+            stack.append(b)
          b = random.choice(random_stack)
          random_stack = []
       elif len(choice_stack) > 0 and not isinstance(b, Choice) and not isinstance(b, Conditional):
+         if b:
+            stack.append(b)
+
          print
          # Get input from the user. Prompt them until the give us an answer we
          # like
@@ -49,6 +57,8 @@ def run_sequence(seq, state):
 
          b = choice_stack[i-1] 
          choice_stack = []
+      if not b and len(stack) > 0:
+         b = stack.pop()
 
 class Sequence(Block):
    def __init__(self, data):
@@ -58,13 +68,19 @@ class Sequence(Block):
 
    def run(self, state):
       if self.child:
-         run_sequence(self.child, state)
+         stack.append(self.next)
+         return self.child
       return self.next
 
 class Link(Block):
    def __init__(self, data):
       Block.__init__(self, data)
       self.target = data['content']
+
+   def run(self, state):
+      global stack
+      stack = []
+      return self.next
 
 class Comment(Block):
    def __init__(self, data):
@@ -80,16 +96,54 @@ class Flag(Block):
       Block.__init__(self, data)
       print "TODO: Flag constructor called"
 
+functions = {
+      'no': lambda x: x == 0,
+      'with_ally': lambda : False,
+      '': lambda: True,
+      'not': lambda x: not x,
+      'use_magic': lambda x: bool(x)}
+
 class Conditional(Block):
    def __init__(self, data):
       Block.__init__(self, data)
-      print "TODO: better conditional parser"
       t = data['type']
-      if t == 'condition' or t == 'condition_call':
+      if t == 'condition':
+         print "ERROR: can't deal with condition"
          pass
+      elif t == 'condition_call':
+         self.function = data['call']
+         self.arguments = data['arguments']
+      else:
+         print "ERROR: can't deal with fallback/default conditionals"
+   
+   def run(self, state):
+      global stack
+      if hasattr(self, 'function'):
+         args = map(lambda x: state[x], self.arguments)
+         if self.function in functions:
+            if functions[self.function](*args):
+               if self.next:
+                  stack.append(self.next)
+               return self.child
+            else:
+               return self.next
+         elif len(args) == 0 and self.function in state:
+            # FIXME: hack to deal with conditionals not being parsed properly
+            if state[self.function]:
+               if self.next:
+                  stack.append(self.next)
+               return self.child
+            else:
+               return self.next
+         else:
+            print "ERROR: Undefined function %s"%(self.function)
+      else:
+         print "TODO: conditional run. Condition unknown"
+      return self.next
 
 class Choice(Block):
    def __init__(self, data):
+      self.child = None
       Block.__init__(self, data)
       self.text = data['content']
 
@@ -135,7 +189,10 @@ class Assignment(Block):
       self.value = data['value']
 
    def run(self, state):
-      state[self.variable] = self.value
+      try:
+         state[self.variable] = int(self.value)
+      except:
+         state[self.variable] = self.value
       return self.next
 
 # Text classes
@@ -212,10 +269,24 @@ def parse_hook(data):
    print
    return data
 
-def get_sections(data, sections):
+def map_tree(data, func):
    while data:
-      data = data.next
-   
+      func(data)
+      if hasattr(data, 'child'):
+         map_tree(data.child, func)
+      if isinstance(data, Link):
+         data = None
+      else:
+         data = data.next
+
+def get_sections(data, sections):
+   if isinstance(data, Sequence):
+      if not data.name in sections:
+         sections[data.name] = data
+
+def set_links(data, sections):
+   if isinstance(data, Link):
+      data.next = sections[data.target]
 
 def main():
    if len(sys.argv) != 2:
@@ -226,17 +297,39 @@ def main():
    data = json.load(open(sys.argv[1]), object_hook=parse_hook)
 
    # set up the next pointers
-   main_data = data['sequences']['main']
+   sequences = data['sequences']
    sections = {}
 
-   print yaml.dump(main_data)
+   for seq in sequences:
+      map_tree(sequences[seq], lambda d: get_sections(d, sections))
+
+   for seq in sequences:
+      map_tree(sequences[seq], lambda d: set_links(d, sections))
+
+
+   # HACK FIXME TODO: set the next link in each sequence. This is ARBITRARY
+   #  based on the order of the keys in the sequences dict
+   d = None
+   for seq in sequences:
+      if d:
+         d.next = sequences[seq]
+      d = sequences[seq]
 
    print
    print "Done loading data. Running"
    print
 
    state = {}
-   run_sequence(main_data, state)
+   for var in data['variables']:
+      state[var] = False
+
+   try:
+      run_sequence(sections['main'], state)
+   except KeyboardInterrupt:
+      print
+      print "Done"
+   except EOFError:
+      print "Done"
 
 if __name__ == '__main__':
    main()
