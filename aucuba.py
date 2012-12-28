@@ -5,6 +5,7 @@ import sys
 import json
 import yaml
 import random
+import re
 
 block_id = 0
 text_id = 0
@@ -72,8 +73,8 @@ def run_sequence(seq, state):
          b = stack.pop()
 
 def java(indent, block_id, block_type, *args):
-   return indent + "Block block_%s = new %s(%s);\n"%(block_id, block_type, 
-         ", ".join(args))
+   return indent + "%s block_%s = new %s(%s);\n"%(block_type, block_id,
+         block_type, ", ".join(args))
 
 def block_name(block):
    if block:
@@ -412,10 +413,15 @@ def write_java_links(data, indent):
       output += write_java_links(data.next, indent)
    return output
 
+def escape(t):
+   quot = re.sub(r'(["])', r'\\\1', t)
+   return re.sub(r'([\n])', r'\\n', quot)
+
 def write_java_text(indent):
    output = indent + "res = new String[%d];\n"%(len(text_resources))
    for i,t in enumerate(text_resources):
-      output += indent + "res[%d] = \"%s\";\n"%(i, t)
+      text = escape(t)
+      output += indent + "res[%d] = \"%s\";\n"%(i, text)
    return output
 
 def main():
@@ -454,6 +460,10 @@ def main():
    name = name.capitalize()
 
    data_class = """
+import com.asherah.internal.*;
+import com.asherah.AsherahData;
+import com.asherah.AsherahValue;
+
 public class %s implements AsherahData {
    private Block main;
 
@@ -481,6 +491,8 @@ public class %s implements AsherahData {
 
    res_name = "%sTextResource"%(name)
    resource_class = """
+import com.asherah.AsherahResource;
+
 public class %s implements AsherahResource<String> {
    private String res[];
 
@@ -498,7 +510,7 @@ public class %s implements AsherahResource<String> {
 """
 
    print resource_class
-   res_file = open(res_name + '.java')
+   res_file = open(res_name + '.java', 'w')
    res_file.write(resource_class)
    res_file.close()
 
