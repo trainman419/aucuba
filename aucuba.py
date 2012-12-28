@@ -413,7 +413,7 @@ def write_java_links(data, indent):
    return output
 
 def write_java_text(indent):
-   output = indent + "String res[] = new String[%d];\n"%(len(text_resources))
+   output = indent + "res = new String[%d];\n"%(len(text_resources))
    for i,t in enumerate(text_resources):
       output += indent + "res[%d] = \"%s\";\n"%(i, t)
    return output
@@ -449,12 +449,59 @@ def main():
    print "Done loading data. Running"
    print
 
+   name = sys.argv[1]
+   name = name.rpartition('.')[0]
+   name = name.capitalize()
+
+   data_class = """
+public class %s implements AsherahData {
+   private Block main;
+
+   public Block getMain() {
+      return main;
+   }
+
+   public %s() {
+"""%(name, name)
+
    indent = "      "
-   print write_java_defs(sequences['main'], indent)
+   data_class += write_java_defs(sequences['main'], indent)
+   data_class += write_java_links(sequences['main'], indent)
 
-   print write_java_links(sequences['main'], indent)
+   data_class += """
+      main = %s;
+   }
+}
+"""%(block_name(sequences['main']))
 
-   print write_java_text(indent)
+   print data_class
+   data_file = open(name + '.java', 'w')
+   data_file.write(data_class)
+   data_file.close()
+
+   res_name = "%sTextResource"%(name)
+   resource_class = """
+public class %s implements AsherahResource<String> {
+   private String res[];
+
+   public String get(int id) {
+      return res[id];
+   }
+
+   public %s() {
+"""%(res_name, res_name)
+   resource_class += write_java_text(indent)
+
+   resource_class += """
+   }
+}
+"""
+
+   print resource_class
+   res_file = open(res_name + '.java')
+   res_file.write(resource_class)
+   res_file.close()
+
 
 #   state = {}
 #   for var in data['variables']:
