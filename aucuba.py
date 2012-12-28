@@ -427,9 +427,14 @@ def write_java_text(indent):
    return output
 
 def main():
-   if len(sys.argv) != 2:
-      print "Usage: aucuba <json>"
+   if not len(sys.argv) in [2, 3]:
+      print "Usage: aucuba <json> [package]"
       sys.exit(1)
+
+   package = None
+   if len(sys.argv) == 3:
+      package = sys.argv[2]
+
 
    # load the data
    data = json.load(open(sys.argv[1]), object_hook=parse_hook)
@@ -461,7 +466,11 @@ def main():
    name = name.rpartition('.')[0]
    name = name.capitalize()
 
-   data_class = """
+   data_class = ""
+   if package:
+      data_class += "package %s;\n"%(package)
+
+   data_class += """
 import com.asherah.internal.*;
 import com.asherah.AsherahData;
 import com.asherah.AsherahValue;
@@ -492,7 +501,10 @@ public class %s implements AsherahData {
    data_file.close()
 
    res_name = "%sTextResource"%(name)
-   resource_class = """
+   resource_class = ""
+   if package:
+      resource_class += "package %s;\n"%(package)
+   resource_class += """
 import com.asherah.AsherahResource;
 
 public class %s implements AsherahResource<String> {
