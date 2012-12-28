@@ -28,7 +28,7 @@ class Block:
       print "ERROR: Block run() called on ", self
       return self.next
 
-   def java(self):
+   def java(self, indent):
       print "ERROR: Block print() called on ", self
       return "\n"
 
@@ -71,8 +71,8 @@ def run_sequence(seq, state):
       if not b and len(stack) > 0:
          b = stack.pop()
 
-def java(block_id, block_type, *args):
-   return "Block block_%s = new %s(%s);\n"%(block_id, block_type, 
+def java(indent, block_id, block_type, *args):
+   return indent + "Block block_%s = new %s(%s);\n"%(block_id, block_type, 
          ", ".join(args))
 
 def block_name(block):
@@ -94,8 +94,8 @@ class Sequence(Block):
          return self.child
       return self.next
 
-   def java(self):
-      return java(self.id, "Sequence", block_name(self.next),
+   def java(self, indent):
+      return java(indent, self.id, "Sequence", block_name(self.next),
             block_name(self.child), '"%s"'%self.name)
 
 
@@ -109,8 +109,11 @@ class Link(Block):
       stack = []
       return self.next
 
-   def java(self):
-      return java(self.id, "Link")
+   def java(self, indent):
+      return java(indent, self.id, "Link")
+
+   def java_link(self, indent):
+      return indent + "block_%d.setNext(block_%d);\n"%(self.id, self.next.id)
 
 class Comment(Block):
    def __init__(self, data):
@@ -121,7 +124,7 @@ class Comment(Block):
       # explicitly do nothing
       return self.next
 
-   def java(self):
+   def java(self, indent):
       return "";
 
 class Flag(Block):
@@ -129,8 +132,8 @@ class Flag(Block):
       Block.__init__(self, data)
       self.variable = data['variable']
 
-   def java(self):
-      return java(self.id, 'Flag', block_name(self.next), 
+   def java(self, indent):
+      return java(indent, self.id, 'Flag', block_name(self.next), 
             '"%s"'%(self.variable))
 
 functions = {
@@ -178,15 +181,16 @@ class Conditional(Block):
          print "TODO: conditional run. Condition unknown"
       return self.next
 
-   def java(self):
+   def java(self, indent):
       s = 'null'
       output = ""
       if len(self.arguments) > 0:
          s = "args_%d"%(self.id)
-         output += "String [] %s = new String[%d];\n"%(s, len(self.arguments))
+         output += indent + "String [] %s = new String[%d];\n"%(s,
+               len(self.arguments))
          for i,a in enumerate(self.arguments):
-            output += "%s[%d] = \"%s\";\n"%(s, i, a)
-      output += java(self.id, "Conditional", block_name(self.next),
+            output += indent + "%s[%d] = \"%s\";\n"%(s, i, a)
+      output += java(indent, self.id, "Conditional", block_name(self.next),
             block_name(self.child), '"%s"'%self.function, s)
       return output;
 
@@ -208,8 +212,8 @@ class Choice(Block):
       choice_stack.append(self.child)
       return self.next
 
-   def java(self):
-      return java(self.id, "Choice", block_name(self.next), 
+   def java(self, indent):
+      return java(indent, self.id, "Choice", block_name(self.next), 
             block_name(self.child), str(self.text_id))
 
 class Random(Block):
@@ -217,8 +221,8 @@ class Random(Block):
       random_stack.append(self.child)
       return self.next
 
-   def java(self):
-      return java(self.id, "Random", block_name(self.next),
+   def java(self, indent):
+      return java(indent, self.id, "Random", block_name(self.next),
             block_name(self.child))
 
 # Expressions
@@ -236,8 +240,8 @@ class Decrement(Block):
       state[self.variable] -= 1
       return self.next
 
-   def java(self):
-      return java(self.id, 'Decrement', block_name(self.next), 
+   def java(self, indent):
+      return java(indent, self.id, 'Decrement', block_name(self.next), 
             '"%s"'%(self.variable))
 
 class Increment(Block):
@@ -249,8 +253,8 @@ class Increment(Block):
       state[self.variable] += 1
       return self.next
 
-   def java(self):
-      return java(self.id, 'Increment', block_name(self.next), 
+   def java(self, indent):
+      return java(indent, self.id, 'Increment', block_name(self.next), 
             '"%s"'%(self.variable))
 
 class Assignment(Block):
@@ -266,7 +270,7 @@ class Assignment(Block):
          state[self.variable] = self.value
       return self.next
 
-   def java(self):
+   def java(self, indent):
       v = '"%s"'%(self.value)
       try:
          v = "%d"%(int(self.value))
@@ -278,8 +282,9 @@ class Assignment(Block):
                v = 'false'
          except:
             pass
-      output = "AsherahValue value_%s = new AsherahValue(%s);\n"%(self.id, v)
-      output += java(self.id, 'Assignment', block_name(self.next), 
+      output = indent + "AsherahValue value_%s = new AsherahValue(%s);\n"%(
+            self.id, v)
+      output += java(indent, self.id, 'Assignment', block_name(self.next), 
             '"%s"'%(self.variable), 'value_%s'%(self.id))
       return output
 
@@ -300,8 +305,9 @@ class Text(Block):
       print
       return self.next
 
-   def java(self):
-      return java(self.id, 'Text', block_name(self.next), str(self.text_id))
+   def java(self, indent):
+      return java(indent, self.id, 'Text', block_name(self.next),
+            str(self.text_id))
 
 class Descriptive(Text):
    pass
@@ -387,19 +393,29 @@ def set_links(data, sections):
    if isinstance(data, Link):
       data.next = sections[data.target]
 
-def write_java_defs(data):
+def write_java_defs(data, indent):
    output = ""
    if hasattr(data, 'child') and data.child:
-      output += write_java_defs(data.child)
+      output += write_java_defs(data.child, indent)
    if data.next and not isinstance(data, Link):
-      output += write_java_defs(data.next)
-   output += data.java()
+      output += write_java_defs(data.next, indent)
+   output += data.java(indent)
    return output
 
-def write_java_text():
-   output = "String res[] = new String[%d];\n"%(len(text_resources))
+def write_java_links(data, indent):
+   output = ""
+   if hasattr(data, 'child') and data.child:
+      output += write_java_links(data.child, indent)
+   if isinstance(data, Link):
+      output += data.java_link(indent)
+   elif data.next:
+      output += write_java_links(data.next, indent)
+   return output
+
+def write_java_text(indent):
+   output = indent + "String res[] = new String[%d];\n"%(len(text_resources))
    for i,t in enumerate(text_resources):
-      output += "res[%d] = \"%s\";\n"%(i, t)
+      output += indent + "res[%d] = \"%s\";\n"%(i, t)
    return output
 
 def main():
@@ -433,10 +449,12 @@ def main():
    print "Done loading data. Running"
    print
 
-   for seq in sequences:
-      print write_java_defs(sequences[seq])
+   indent = "      "
+   print write_java_defs(sequences['main'], indent)
 
-   print write_java_text()
+   print write_java_links(sequences['main'], indent)
+
+   print write_java_text(indent)
 
 #   state = {}
 #   for var in data['variables']:
