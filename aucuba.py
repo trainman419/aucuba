@@ -7,6 +7,7 @@ import yaml
 import random
 
 block_id = 0
+text_id = 0
 
 class Block:
    def __init__(self, data):
@@ -193,6 +194,9 @@ class Choice(Block):
       self.child = None
       Block.__init__(self, data)
       self.text = data['content']
+      global text_id
+      self.text_id = text_id
+      text_id += 1
 
    def run(self, state):
       i = len(choice_stack) + 1
@@ -201,9 +205,8 @@ class Choice(Block):
       return self.next
 
    def java(self):
-      print "TODO: convert choice text to id"
       return java(self.id, "Choice", block_name(self.next), 
-            block_name(self.child), '0')
+            block_name(self.child), str(self.text_id))
 
 class Random(Block):
    def run(self, state):
@@ -282,14 +285,17 @@ class Text(Block):
       Block.__init__(self, data)
       self.text = data['content']
 
+      global text_id
+      self.text_id = text_id
+      text_id += 1
+
    def run(self, state):
       print self.text
       print
       return self.next
 
    def java(self):
-      print "TODO: convert text to id"
-      return java(self.id, 'Text', block_name(self.next), '0')
+      return java(self.id, 'Text', block_name(self.next), str(self.text_id))
 
 class Descriptive(Text):
    pass
