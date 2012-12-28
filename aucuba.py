@@ -126,7 +126,7 @@ class Comment(Block):
       return self.next
 
    def java(self, indent):
-      return "";
+      return java(indent, self.id, 'Comment', block_name(self.next));
 
 class Flag(Block):
    def __init__(self, data):
@@ -401,6 +401,8 @@ def write_java_defs(data, indent):
    if data.next and not isinstance(data, Link):
       output += write_java_defs(data.next, indent)
    output += data.java(indent)
+   if data.id == 24:
+      print yaml.dump(data)
    return output
 
 def write_java_links(data, indent):
