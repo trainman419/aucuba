@@ -27,6 +27,7 @@ public class AsherahGame<Resource> {
     *  that list of the item the user chose
     */
    public List<Resource> step(int choice) {
+      return null;
       List<Integer> choices = engine.step(choice);
       List<Resource> result = new ArrayList<Resource>(choices.size());
       for( int i=0; i<choices.size(); ++i ) {

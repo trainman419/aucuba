@@ -8,8 +8,14 @@
 package com.asherah;
 
 import java.util.List;
+import java.util.LinkedList;
 
-public interface AsherahEngine {
+public class AsherahEngine {
+   private AsherahData data;
+
+   public AsherahEngine(AsherahData d) {
+      data = d;
+   }
 
    /*
     * Get the next piece of the story
@@ -20,6 +26,9 @@ public interface AsherahEngine {
     * If the previous list had more than one element, choice is the index into
     *  that list of the item the user chose
     */
-   public List<Integer> step(int choice);
+   public List<Integer> step(int choice) {
+      List<Integer> res = new LinkedList<Integer>();
+      return res;
+   }
 
 }

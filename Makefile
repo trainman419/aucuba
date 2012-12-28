@@ -1,8 +1,13 @@
 
-all: Complete_output.class Complete_outputTextResource.class
+Sample.class: Complete_output.class Complete_outputTextResource.class
+
+all: Sample.class
+
+run: Sample.class
+	java Sample
 
 Complete_output.java: aucuba.py complete_output.json
-	./aucuba.py complete_output.json com.sample
+	./aucuba.py complete_output.json
 
 %.class: %.java
 	javac $<
@@ -12,3 +17,4 @@ clean:
 
 .phony: all
 .phony: clean
+.phone: run
