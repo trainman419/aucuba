@@ -8,6 +8,7 @@ import random
 
 block_id = 0
 text_id = 0
+text_resources = []
 
 class Block:
    def __init__(self, data):
@@ -194,9 +195,12 @@ class Choice(Block):
       self.child = None
       Block.__init__(self, data)
       self.text = data['content']
+
       global text_id
       self.text_id = text_id
       text_id += 1
+
+      text_resources.append(self.text)
 
    def run(self, state):
       i = len(choice_stack) + 1
@@ -289,6 +293,8 @@ class Text(Block):
       self.text_id = text_id
       text_id += 1
 
+      text_resources.append(self.text)
+
    def run(self, state):
       print self.text
       print
@@ -311,6 +317,8 @@ class Speech(Text):
       Text.__init__(self, data)
       self.actor = data['actor']
       self.text = "%s: %s"%(self.actor, self.text)
+
+      text_resources[self.text_id] = self.text
 
 
 type_map = {
@@ -388,6 +396,12 @@ def write_java_defs(data):
    output += data.java()
    return output
 
+def write_java_text():
+   output = "String res[] = new String[%d];\n"%(len(text_resources))
+   for i,t in enumerate(text_resources):
+      output += "res[%d] = \"%s\";\n"%(i, t)
+   return output
+
 def main():
    if len(sys.argv) != 2:
       print "Usage: aucuba <json>"
@@ -421,6 +435,8 @@ def main():
 
    for seq in sequences:
       print write_java_defs(sequences[seq])
+
+   print write_java_text()
 
 #   state = {}
 #   for var in data['variables']:
