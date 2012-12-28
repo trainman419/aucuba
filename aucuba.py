@@ -6,9 +6,14 @@ import json
 import yaml
 import random
 
+block_id = 0
+
 class Block:
    def __init__(self, data):
       self.next = None
+      global block_id
+      self.id = block_id
+      block_id += 1
       if 'children' in data:
          self.child = data['children'][0]
 
@@ -20,6 +25,10 @@ class Block:
    def run(self, state):
       print "ERROR: Block run() called on ", self
       return self.next
+
+   def java(self):
+      print "ERROR: Block print() called on ", self
+      return "\n"
 
 stack = []
 random_stack = []
@@ -60,6 +69,17 @@ def run_sequence(seq, state):
       if not b and len(stack) > 0:
          b = stack.pop()
 
+def java(block_id, block_type, *args):
+   return "Block block_%s = new %s(%s);\n"%(block_id, block_type, 
+         ", ".join(args))
+
+def block_name(block):
+   if block:
+      return "block_%d"%(block.id)
+   else:
+      return "null"
+
+
 class Sequence(Block):
    def __init__(self, data):
       self.child = None
@@ -72,6 +92,11 @@ class Sequence(Block):
          return self.child
       return self.next
 
+   def java(self):
+      return java(self.id, "Sequence", block_name(self.next),
+            block_name(self.child), '"%s"'%self.name)
+
+
 class Link(Block):
    def __init__(self, data):
       Block.__init__(self, data)
@@ -82,6 +107,9 @@ class Link(Block):
       stack = []
       return self.next
 
+   def java(self):
+      return java(self.id, "Link")
+
 class Comment(Block):
    def __init__(self, data):
       Block.__init__(self, data)
@@ -91,10 +119,17 @@ class Comment(Block):
       # explicitly do nothing
       return self.next
 
+   def java(self):
+      return "";
+
 class Flag(Block):
    def __init__(self, data):
       Block.__init__(self, data)
-      print "TODO: Flag constructor called"
+      self.variable = data['variable']
+
+   def java(self):
+      return java(self.id, 'Flag', block_name(self.next), 
+            '"%s"'%(self.variable))
 
 functions = {
       'no': lambda x: x == 0,
@@ -141,6 +176,18 @@ class Conditional(Block):
          print "TODO: conditional run. Condition unknown"
       return self.next
 
+   def java(self):
+      s = 'null'
+      output = ""
+      if len(self.arguments) > 0:
+         s = "args_%d"%(self.id)
+         output += "String [] %s = new String[%d];\n"%(s, len(self.arguments))
+         for i,a in enumerate(self.arguments):
+            output += "%s[%d] = \"%s\";\n"%(s, i, a)
+      output += java(self.id, "Conditional", block_name(self.next),
+            block_name(self.child), '"%s"'%self.function, s)
+      return output;
+
 class Choice(Block):
    def __init__(self, data):
       self.child = None
@@ -153,10 +200,19 @@ class Choice(Block):
       choice_stack.append(self.child)
       return self.next
 
+   def java(self):
+      print "TODO: convert choice text to id"
+      return java(self.id, "Choice", block_name(self.next), 
+            block_name(self.child), '0')
+
 class Random(Block):
    def run(self, state):
       random_stack.append(self.child)
       return self.next
+
+   def java(self):
+      return java(self.id, "Random", block_name(self.next),
+            block_name(self.child))
 
 # Expressions
 class Call(Block):
@@ -173,6 +229,10 @@ class Decrement(Block):
       state[self.variable] -= 1
       return self.next
 
+   def java(self):
+      return java(self.id, 'Decrement', block_name(self.next), 
+            '"%s"'%(self.variable))
+
 class Increment(Block):
    def __init__(self, data):
       Block.__init__(self, data)
@@ -181,6 +241,10 @@ class Increment(Block):
    def run(self, state):
       state[self.variable] += 1
       return self.next
+
+   def java(self):
+      return java(self.id, 'Increment', block_name(self.next), 
+            '"%s"'%(self.variable))
 
 class Assignment(Block):
    def __init__(self, data):
@@ -195,6 +259,23 @@ class Assignment(Block):
          state[self.variable] = self.value
       return self.next
 
+   def java(self):
+      v = '"%s"'%(self.value)
+      try:
+         v = "%d"%(int(self.value))
+      except:
+         try:
+            if bool(self.value):
+               v = 'true'
+            else:
+               v = 'false'
+         except:
+            pass
+      output = "AsherahValue value_%s = new AsherahValue(%s);\n"%(self.id, v)
+      output += java(self.id, 'Assignment', block_name(self.next), 
+            '"%s"'%(self.variable), 'value_%s'%(self.id))
+      return output
+
 # Text classes
 class Text(Block):
    def __init__(self, data):
@@ -205,6 +286,10 @@ class Text(Block):
       print self.text
       print
       return self.next
+
+   def java(self):
+      print "TODO: convert text to id"
+      return java(self.id, 'Text', block_name(self.next), '0')
 
 class Descriptive(Text):
    pass
@@ -288,6 +373,15 @@ def set_links(data, sections):
    if isinstance(data, Link):
       data.next = sections[data.target]
 
+def write_java_defs(data):
+   output = ""
+   if hasattr(data, 'child') and data.child:
+      output += write_java_defs(data.child)
+   if data.next and not isinstance(data, Link):
+      output += write_java_defs(data.next)
+   output += data.java()
+   return output
+
 def main():
    if len(sys.argv) != 2:
       print "Usage: aucuba <json>"
@@ -319,17 +413,20 @@ def main():
    print "Done loading data. Running"
    print
 
-   state = {}
-   for var in data['variables']:
-      state[var] = False
+   for seq in sequences:
+      print write_java_defs(sequences[seq])
 
-   try:
-      run_sequence(sections['main'], state)
-   except KeyboardInterrupt:
-      print
-      print "Done"
-   except EOFError:
-      print "Done"
+#   state = {}
+#   for var in data['variables']:
+#      state[var] = False
+#
+#   try:
+#      run_sequence(sections['main'], state)
+#   except KeyboardInterrupt:
+#      print
+#      print "Done"
+#   except EOFError:
+#      print "Done"
 
 if __name__ == '__main__':
    main()
