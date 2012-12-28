@@ -10,7 +10,10 @@ public class Decrement extends Block {
    }
 
    public Block run(AsherahState state) {
-      // TODO: implement
+      AsherahValue v = state.get(variable);
+      v = new AsherahValue(v.as_int() - 1);
+      state.set(variable, v);
+
       return next;
    }
 }

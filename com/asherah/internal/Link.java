@@ -3,7 +3,7 @@ package com.asherah.internal;
 
 public class Link extends Block {
    public Block run(AsherahState state) {
-      // TODO: clear stack
+      state.stack_clear();
       return next;
    }
 

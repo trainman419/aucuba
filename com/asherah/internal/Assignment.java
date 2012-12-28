@@ -12,7 +12,7 @@ public class Assignment extends Block {
    }
 
    public Block run(AsherahState state) {
-      // TODO: implement
+      state.set(variable, value);
       return next;
    }
 }

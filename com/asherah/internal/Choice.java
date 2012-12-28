@@ -11,7 +11,8 @@ public class Choice extends Branch {
    }
 
    public Block run(AsherahState state) {
-      // TODO: push child on choice_stack
+      // push child on choice_stack
+      state.choice_push(child);
       // TODO: send resource_id to output
       return next;
    }

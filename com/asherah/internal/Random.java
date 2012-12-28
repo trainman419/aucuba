@@ -8,7 +8,7 @@ public class Random extends Branch {
    }
 
    public Block run(AsherahState state) {
-      // TODO: push child on random_stack
+      state.random_push(child);
       return next;
    }
 }
