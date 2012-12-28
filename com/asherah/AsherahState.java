@@ -5,13 +5,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import java.util.LinkedList;
+import java.util.HashMap;
+
 import com.asherah.internal.Block;
+import com.asherah.internal.Choice;
+import com.asherah.internal.Random;
 
 public class AsherahState {
    private Stack<Block> stack;
-   private List<Block> choice_stack;
+   private List<Choice> choice_stack;
    private List<Block> random_stack;
    private Map<String, AsherahValue> heap;
+
+   public AsherahState() {
+      stack = new Stack<Block>();
+      choice_stack = new LinkedList<Choice>();
+      random_stack = new LinkedList<Block>();
+      heap = new HashMap<String, AsherahValue>();
+   }
 
    // variable methods
    public AsherahValue get(String name) {
@@ -28,7 +40,11 @@ public class AsherahState {
    }
 
    public Block stack_pop() {
-      return stack.pop();
+      if( stack.size() > 0 ) {
+         return stack.pop();
+      } else {
+         return null;
+      }
    }
 
    public void stack_clear() {
@@ -36,7 +52,7 @@ public class AsherahState {
    }
 
    // choice_stack methods
-   public void choice_push(Block b) {
+   public void choice_push(Choice b) {
       choice_stack.add(b);
    }
 
@@ -44,12 +60,13 @@ public class AsherahState {
       return choice_stack.size();
    }
 
-   public Block choice_get(int i) {
-      Block b = choice_stack.get(i);
-      choice_stack.clear();
-      return b;
+   public Choice choice_get(int i) {
+      return choice_stack.get(i);
    }
 
+   public void choice_clear() {
+      choice_stack.clear();
+   }
 
    // random_stack methods
    public void random_push(Block b) {
@@ -61,8 +78,10 @@ public class AsherahState {
    }
 
    public Block random_get(int i) {
-      Block b = random_stack.get(i);
+      return random_stack.get(i);
+   }
+
+   public void random_clear() {
       random_stack.clear();
-      return b;
    }
 }

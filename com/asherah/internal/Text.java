@@ -16,4 +16,12 @@ public class Text extends Block {
       //  to the output layer
       return next;
    }
+
+   public boolean has_output() {
+      return true;
+   }
+
+   public int get_output() {
+      return resource_id;
+   }
 }

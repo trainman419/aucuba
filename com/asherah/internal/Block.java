@@ -13,4 +13,12 @@ public class Block {
    public Block run(AsherahState state) {
       return next;
    }
+
+   public boolean has_output() {
+      return false;
+   }
+
+   public int get_output() {
+      return -1;
+   }
 }

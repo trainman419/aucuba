@@ -13,8 +13,16 @@ public class Choice extends Branch {
 
    public Block run(AsherahState state) {
       // push child on choice_stack
-      state.choice_push(child);
+      state.choice_push(this);
       // TODO: send resource_id to output
       return next;
+   }
+
+   public int get_output() {
+      return resource_id;
+   }
+
+   public Block get_child() {
+      return child;
    }
 }

@@ -1,5 +1,5 @@
 
-Sample.class: Complete_output.class Complete_outputTextResource.class
+Sample.class: Complete_output.class Complete_outputTextResource.class com/asherah/AsherahGame.class com/asherah/AsherahEngine.class com/asherah/AsherahState.class
 
 all: Sample.class
 
