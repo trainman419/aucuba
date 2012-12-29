@@ -1,0 +1,3 @@
+Potential bugs:
+ - conditionals may not be re-evaluated if the preceding choice changes
+   variables.

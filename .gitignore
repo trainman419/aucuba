@@ -36,3 +36,7 @@ nosetests.xml
 
 # Java class files
 *.class
+
+# Generated java files
+Complete_output.java
+Complete_outputTextResource.java
