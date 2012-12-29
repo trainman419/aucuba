@@ -26,6 +26,10 @@ public class AsherahState {
    }
 
    // variable methods
+   public boolean has(String name) {
+      return heap.containsKey(name);
+   }
+
    public AsherahValue get(String name) {
       return heap.get(name);
    }

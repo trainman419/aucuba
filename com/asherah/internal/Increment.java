@@ -14,7 +14,7 @@ public class Increment extends Block {
 
    public Block run(AsherahState state) {
       AsherahValue v = state.get(variable);
-      v = new AsherahValue(v.asInt() - 1);
+      v = new AsherahValue(v.asInt() + 1);
       state.set(variable, v);
 
       return next;

@@ -48,7 +48,6 @@ public class AsherahEngine {
          pending_choice = false;
       }
       while( current != null && ! current.has_output() ) {
-         System.out.println(current);
          current = current.run(state);
          if( current == null ) {
             current = state.stack_pop();

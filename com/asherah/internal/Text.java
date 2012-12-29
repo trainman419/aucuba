@@ -12,8 +12,6 @@ public class Text extends Block {
    }
 
    public Block run(AsherahState state) {
-      // TODO: figure out how to pass resource_id
-      //  to the output layer
       return next;
    }
 
